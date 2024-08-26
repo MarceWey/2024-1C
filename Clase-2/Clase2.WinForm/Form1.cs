@@ -93,11 +93,61 @@ namespace Clase2.WinForm
             }
         }
 
+        private async Task ObtenerResultadosApi()
+        {
+            // URL de destino
+            string url = "https://localhost:7169/api/Resultados";
+
+            try
+            {
+                // Crear cliente HTTP
+                using (HttpClient client = new HttpClient())
+                {
+                    // Configurar encabezados si es necesario (por ejemplo, para indicar el tipo de contenido)
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+                    client.DefaultRequestHeaders.Add("User-Agent", "MyApp");
+
+                    // Realizar la solicitud GET
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    // Verificar si la solicitud fue exitosa (código de estado 200 OK)
+                    if (response.IsSuccessStatusCode)
+                    {
+                        // Leer la respuesta
+                        string responseBody = await response.Content.ReadAsStringAsync();
+
+                        // Aquí puedes manejar la respuesta, por ejemplo, deserializar el JSON si es necesario
+                        // Supongamos que la respuesta es una lista de objetos de tipo Resultados en formato JSON
+                        List<Resultado> resultados = JsonConvert.DeserializeObject<List<Resultado>>(responseBody);
+
+                        gvResultados.Rows.Clear();
+
+                        // Puedes hacer lo que necesites con la lista de resultados, como mostrarla en un DataGridView
+                        foreach (var resultado in resultados)
+                        {
+                            // Por ejemplo, agregar cada equipo a un DataGridView llamado gvEquipos
+                            AgregarResultadoAGrilla(gvResultados, resultado);
+                        }
+                    }
+                    else
+                    {
+                        // Manejar errores de solicitud
+                        Console.WriteLine($"La solicitud falló con el código de estado: {response.StatusCode}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Manejar errores de red o de la solicitud
+                MessageBox.Show($"Error al realizar la solicitud: {ex.Message}");
+                Console.WriteLine($"Error al realizar la solicitud: {ex.Message}");
+            }
+        }
+
         private void btnCargarEquipo_Click(object sender, EventArgs e)
         {
             AgregarEquiposApi();
         }
-
 
         private void btnObtenerEquipos_Click(object sender, EventArgs e)
         {
@@ -184,7 +234,7 @@ namespace Clase2.WinForm
                         case "PUT":
                             response = await client.PutAsync(url, bodyContent);
                             break;
-                        // Aquí puedes agregar más casos para otros métodos HTTP si es necesario
+                            // Aquí puedes agregar más casos para otros métodos HTTP si es necesario
                     }
 
                     // Verificar si la solicitud fue exitosa (código de estado 200 OK)
@@ -314,6 +364,22 @@ namespace Clase2.WinForm
             gv.Rows.Add(fila);
         }
 
+        private void AgregarResultadoAGrilla(DataGridView gv, Resultado resultado)
+        {
+            // Crear una nueva fila
+            DataGridViewRow fila = new DataGridViewRow();
+            fila.CreateCells(gv);
+
+            // Asignar valores a las celdas de la fila
+            //fila.Cells[0].Value = resultado.Id;
+            fila.Cells[0].Value = resultado.EquipoLocal;
+            fila.Cells[1].Value = resultado.GolesLocal + "-" + resultado.GolesVisitante;
+            fila.Cells[2].Value = resultado.EquipoVisitante;
+
+            // Agregar la fila al DataGridView
+            gv.Rows.Add(fila);
+        }
+
         private void btnGuardarEquipos_Click(object sender, EventArgs e)
         {
             //recorrer grilla y actualizar
@@ -340,6 +406,11 @@ namespace Clase2.WinForm
             }
 
             ObtenerEquiposApi();
+        }
+
+        private void btnRefrescarGrilla_Click(object sender, EventArgs e)
+        {
+            ObtenerResultadosApi();
         }
     }
 }
